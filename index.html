@@ -36,6 +36,9 @@ body{
 }
 .btn.html{background:var(--teal);color:#fff}
 .btn.pdf{background:#EEF2F6;color:#3A4B5C}
+.btn.copy{background:#fff;color:#0A6E96;border:1.5px solid #B9D9E7;cursor:pointer;font-family:inherit}
+.btn.copy:hover{background:#F0F8FB}
+.btn.copy.done{background:#E1F3E9;color:#177A4C;border-color:#BFE3CF}
 .foot{font-size:12px;color:var(--sub);margin-top:30px;text-align:center}
 </style>
 </head>
@@ -52,22 +55,45 @@ body{
   <div class="card">
     <div class="t"><b>年次レポート 詳細版</b><span>全19章・図33点・表23点。経年推移とJIPAD全国比較つき</span></div>
     <a class="btn html" href="report2025.html">HTMLで開く</a>
+    <button class="btn copy" data-url="report2025.html">🔗 リンクをコピー</button>
     <a class="btn pdf" href="report2025.pdf">PDF</a>
   </div>
 
   <div class="card">
     <div class="t"><b>エグゼクティブレポート</b><span>管理職・多職種向けの要約版</span></div>
     <a class="btn html" href="executive2025.html">HTMLで開く</a>
+    <button class="btn copy" data-url="executive2025.html">🔗 リンクをコピー</button>
     <a class="btn pdf" href="executive2025.pdf">PDF</a>
   </div>
 
   <div class="card">
     <div class="t"><b>栄養指標データ</b><span>管理栄養士向け。データ入力改善に伴い更新予定</span></div>
     <a class="btn html" href="nutrition2025.html">HTMLで開く</a>
+    <button class="btn copy" data-url="nutrition2025.html">🔗 リンクをコピー</button>
     <a class="btn pdf" href="nutrition2025.pdf">PDF</a>
   </div>
 
   <div class="foot">聖路加国際病院 集中治療科</div>
 </div>
+<script>
+document.querySelectorAll('.btn.copy').forEach(function(b){
+  b.addEventListener('click', function(){
+    var url = location.origin + location.pathname.replace(/index\.html$/,'').replace(/\/?$/,'/') + b.dataset.url;
+    function done(){
+      var t = b.textContent;
+      b.textContent = '✓ コピーしました';
+      b.classList.add('done');
+      setTimeout(function(){ b.textContent = t; b.classList.remove('done'); }, 1600);
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done);
+    } else {
+      var ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      document.execCommand('copy'); document.body.removeChild(ta); done();
+    }
+  });
+});
+</script>
 </body>
 </html>

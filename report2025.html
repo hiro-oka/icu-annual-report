@@ -12829,6 +12829,20 @@ h1 .num,h2 .num{
 h1 .num{font-size:.86em}
 h2 .num{font-size:.9em}
 
+/* 狭い画面では節見出しが2行に折り返す（「11.2 重症度スコア（予定術後除く）」など）。
+   本体のCSSはh1しか縮めていないので、h2・h3と番号の余白もここで詰める。 */
+@media (max-width:900px){
+  h2{font-size:1.18em;padding-left:.5em}
+  h3{font-size:1.04em}
+  h1 .num,h2 .num{margin-right:.42em}
+}
+@media (max-width:560px){
+  h1{font-size:1.42em}
+  h2{font-size:1.08em;line-height:1.5}
+  h3{font-size:1em}
+  h1 .num,h2 .num{margin-right:.34em}
+}
+
 /* ---- 章見出しと同格に見せるh2 ---- */
 h2.h1ish{
   font-size:1.85em;font-weight:800;color:var(--navy);

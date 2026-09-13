@@ -87,6 +87,9 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
   .wrap{padding:0 14px 60px}
 }
 @media print{
+  /* 画面と同じ配色でPDF化する（2026-09-13 本人指示）。macOS の印刷ダイアログは
+     「背景のグラフィック」が既定オフなので、これが無いと淡色の箱や帯が白く飛ぶ */
+  *,:after,:before{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body{background:#fff}
   .hero{border-radius:0}
   figure,.finding,.kpi,.tbl,.rec li{break-inside:avoid}

@@ -175,7 +175,28 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
 .ln-svg.sm .ln-ax{font-size:12.5px;} .ln-svg.sm .ln-pt{font-size:11.5px;} .ln-svg.sm .ln-yl{font-size:12.5px;}
 .ln-svg.sm .ln-endt{font-size:12.5px;} .ln-svg.sm .ln-below{font-size:11px;}
 @media(max-width:700px){.ln-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
-@media(max-width:460px){.ln-grid{grid-template-columns:minmax(0,1fr)!important}}</style><script>// 年次レポートの動く図（モーショングラフィック）の共通部品
+@media(max-width:460px){.ln-grid{grid-template-columns:minmax(0,1fr)!important}}
+/* ⑤ レポート全体の動き（report_anim.js の enhance）。.mo-on は JS が動いたときだけ付く */
+.mo-on .mo{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
+.mo-on .mo.mo-in{opacity:1;transform:none}
+.mo-on .mo-cv{opacity:0;transform:translateY(12px);transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.mo-on .mo-in > .mo-cv,.mo-on .mo-in.mo-cv{opacity:1;transform:none}
+.mo-on .mo-hl{background-repeat:no-repeat;background-size:0% 100%;transition:background-size .8s cubic-bezier(.4,.1,.2,1)}
+.mo-on .mo-hl.mo-in{background-size:100% 100%}
+.mo-on .mo-li{opacity:0;transform:translateX(-8px);transition:opacity .45s ease,transform .45s ease}
+.mo-on .mo-li.mo-in{opacity:1;transform:none}
+.mo-on .mo-row{opacity:0;transition:opacity .4s ease}
+.mo-on .mo-row.mo-in{opacity:1}
+.mo-on .mo-dot{transform-box:fill-box;transform-origin:center;transform:scale(0);transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.mo-on .mo-dot.mo-in{transform:scale(1)}
+/* 印刷・PDFでは必ず最終状態 */
+@media print{
+  .mo-on .mo,.mo-on .mo-cv,.mo-on .mo-li,.mo-on .mo-row{opacity:1!important;transform:none!important}
+  .mo-on .mo-hl{background-size:100% 100%!important}
+  .mo-on .mo-dot{transform:none!important}
+}
+.mo-done .mo,.mo-done .mo-cv,.mo-done .mo-li,.mo-done .mo-row{opacity:1!important;transform:none!important}
+.mo-done .mo-hl{background-size:100% 100%!important}</style><script>// 年次レポートの動く図（モーショングラフィック）の共通部品
 // ・画面に入ったら自動再生し、最後まで行ったら頭に戻ってループする
 // ・「動きを減らす」設定の閲覧者と、PDF化（Headless Chrome）では最終状態の静止画を出す
 // ・図は ICUAnim.beds / ICUAnim.sankey / ICUAnim.years の3種類
@@ -506,9 +527,114 @@ window.ICUAnim = (function () {
       ends.forEach(function (e) { e.style.opacity = pr >= 1 ? 1 : 0; });
     };
   }
+  // ---- ⑤ レポート全体の動き（スクロールで現れる・数字のカウントアップ・線を描く・マーカーを引く・棒が伸びる） --
+  // どれも1回だけ。印刷・PDF・「動きを減らす」設定では何もしない（最初から最終状態）。
+  // JSが動かないときに中身が消えないよう、隠すのは .mo-on を付けたあとだけにしている。
+  var MO = [];   // 印刷前に一気に最終状態へ進めるための後始末
+  function easeOut(x) { return 1 - Math.pow(1 - x, 3); }
+  function seen(nodes, cb, th) {
+    if (!nodes.length) return;
+    var io = new IntersectionObserver(function (es) {
+      var batch = es.filter(function (e) { return e.isIntersecting; }).map(function (e) { return e.target; });
+      batch.forEach(function (el, i) { io.unobserve(el); cb(el, i); });
+    }, { threshold: th || 0, rootMargin: "0px 0px -8% 0px" });   // 画面より背の高い表でも、少しでも入れば現れる
+    nodes.forEach(function (n) { io.observe(n); });
+  }
+  function countUp(el) {
+    var node = el.firstChild; if (!node || node.nodeType !== 3) return;
+    var raw = node.nodeValue.trim(), m = raw.match(/^([\d,]+)(\.(\d+))?$/); if (!m) return;
+    var dec = m[3] ? m[3].length : 0, target = parseFloat(raw.replace(/,/g, "")), comma = raw.indexOf(",") >= 0 || target >= 1000;
+    var fmt = function (v) { var s2 = v.toFixed(dec); return comma ? s2.replace(/\B(?=(\d{3})+(?!\d))/g, ",") : s2; };
+    var t0 = null, D = 900;
+    node.nodeValue = fmt(0);
+    MO.push(function () { node.nodeValue = fmt(target); });
+    function fr(ts) { if (t0 === null) t0 = ts; var p = Math.min(1, (ts - t0) / D); node.nodeValue = fmt(target * easeOut(p)); if (p < 1) requestAnimationFrame(fr); }
+    requestAnimationFrame(fr);
+  }
+  function drawSpark(svg) {
+    [].forEach.call(svg.querySelectorAll("polyline"), function (pl) {
+      var L = pl.getTotalLength ? pl.getTotalLength() : 0; if (!L) return;
+      pl.style.strokeDasharray = L; pl.style.strokeDashoffset = L;
+      pl.getBoundingClientRect();
+      pl.style.transition = "stroke-dashoffset .9s cubic-bezier(.3,.7,.2,1)"; pl.style.strokeDashoffset = 0;
+      MO.push(function () { pl.style.transition = "none"; pl.style.strokeDashoffset = 0; });
+    });
+    [].forEach.call(svg.querySelectorAll("circle"), function (c) { c.classList.add("mo-dot"); setTimeout(function () { c.classList.add("mo-in"); }, 850); });
+  }
+  // plotly の棒グラフ：0 から元の高さまで伸ばす（棒だけの図・軸が1組の図に限る）
+  function growBars(w, tries) {
+    var gd = w.classList.contains("js-plotly-plot") ? w : w.querySelector(".js-plotly-plot");
+    if (!gd || !gd.data || !window.Plotly) { if ((tries || 0) < 15) setTimeout(function () { growBars(w, (tries || 0) + 1); }, 250); return; }
+    try {
+      var idx = [], orig = [], zero = [], horiz = false;
+      gd.data.forEach(function (t, i) {
+        if (t.type !== "bar") return;
+        if ((t.xaxis && t.xaxis !== "x") || (t.yaxis && t.yaxis !== "y")) throw "multi-axis";
+        horiz = t.orientation === "h";
+        var v = horiz ? t.x : t.y; if (!v || !v.length) return;
+        idx.push(i); orig.push(Array.prototype.slice.call(v)); zero.push(Array.prototype.map.call(v, function () { return 0; }));
+      });
+      if (!idx.length) return;
+      var ax = horiz ? "xaxis" : "yaxis", key = horiz ? "x" : "y", rl = {};
+      rl[ax + ".range"] = gd._fullLayout[ax].range.slice(); rl[ax + ".autorange"] = false;
+      Plotly.relayout(gd, rl).then(function () {
+        var z = {}; z[key] = zero;
+        return Plotly.restyle(gd, z, idx);
+      }).then(function () {
+        return Plotly.animate(gd, { data: orig.map(function (v) { var o = {}; o[key] = v; return o; }), traces: idx },
+                              { transition: { duration: 750, easing: "cubic-out" }, frame: { duration: 750, redraw: false } });
+      });
+      MO.push(function () { var o = {}; o[key] = orig; Plotly.restyle(gd, o, idx); });
+    } catch (e) { /* 対象外の図はそのまま */ }
+  }
+  function enhance() {
+    if (STATIC || !("IntersectionObserver" in window)) return;
+    var root = document.documentElement; root.classList.add("mo-on");
+    // 1) 表紙：子要素を順に
+    var cv = document.querySelector(".cover, header.hero");
+    if (cv) {
+      [].forEach.call(cv.children, function (c, i) { c.classList.add("mo-cv"); c.style.transitionDelay = (0.1 + i * 0.09) + "s"; });
+      requestAnimationFrame(function () { requestAnimationFrame(function () { cv.classList.add("mo-in"); }); });
+    }
+    // 2) スクロールで下から現れる
+    var sel = ".chapsum,.insight,.callout,.dnm,.tblwrap,.qi-sec,.kpi-band,.fignum,.anim-fig,.plotly.html-widget," +
+              ".toc-content p > img,.toc-content h1,.toc-content h2,.toc-content h3," +
+              ".lead,.finding,.kpi,.tbl,h2.sec,figure,p.imp.box";
+    var items = [].filter.call(document.querySelectorAll(sel), function (el) { return !el.closest(".cover,.hero") && !el.closest(".mo"); });
+    items.forEach(function (el) { el.classList.add("mo"); });
+    seen(items, function (el, i) {
+      el.style.transitionDelay = Math.min(i * 0.06, 0.3) + "s";
+      el.classList.add("mo-in");
+      if (el.matches(".plotly.html-widget")) setTimeout(function () { growBars(el); }, 120);
+    });
+    // 3) 数値カードのカウントアップ（年度タブで表示された年度もその時点で数える）
+    seen([].slice.call(document.querySelectorAll(".kpi-val,.kv")), function (el) { countUp(el); }, 0.5);
+    // 4) ミニ推移線を左から描く
+    seen([].slice.call(document.querySelectorAll("svg.kpi-spark")), function (el) { drawSpark(el); }, 0.5);
+    // 5) 強調マーカーを引く
+    var hls = [].slice.call(document.querySelectorAll(".hl"));
+    hls.forEach(function (el) { el.classList.add("mo-hl"); });
+    seen(hls, function (el) { setTimeout(function () { el.classList.add("mo-in"); }, 180); }, 0.8);
+    // 6) 要点の箇条書き・小さな表の行を順に
+    [].forEach.call(document.querySelectorAll(".chapsum li"), function (li) { li.classList.add("mo-li"); });
+    seen([].slice.call(document.querySelectorAll(".chapsum")), function (el) {
+      [].forEach.call(el.querySelectorAll("li"), function (li, k) { li.style.transitionDelay = (0.15 + k * 0.09) + "s"; li.classList.add("mo-in"); });
+    });
+    [].forEach.call(document.querySelectorAll(".tblwrap table, table.tbl"), function (tb) {
+      var rows = tb.querySelectorAll("tbody tr"); if (rows.length > 25) return;
+      [].forEach.call(rows, function (r) { r.classList.add("mo-row"); });
+      seen([tb], function () { [].forEach.call(rows, function (r, k) { r.style.transitionDelay = (0.1 + k * 0.035) + "s"; r.classList.add("mo-in"); }); });
+    });
+    // 印刷するときは途中の動きを飛ばして最終状態にする
+    window.addEventListener("beforeprint", function () {
+      root.classList.add("mo-done"); MO.forEach(function (f) { try { f(); } catch (e) {} });
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", enhance); else enhance();
+
   return { beds: beds, sankey: sankey, years: years, lines: lines };
 })();</script></head><body><div class="wrap">
-<header class="hero"><div class="eyebrow">聖路加国際病院 集中治療科</div><h1>ICU 年次レポート ダイジェスト<br><span class="fy">2025年度</span></h1><div class="meta">対象期間 2025年04月01日 〜 2026年03月31日 にICU入室した <span class="hl">587例</span>　|　作成 2026年09月</div></header>
+<header class="hero"><div class="eyebrow">聖路加国際病院 集中治療科</div><h1>ICU 年次レポート ダイジェスト<br><span class="fy">2025年度</span></h1><div class="meta">対象期間 2025年04月01日 〜 2026年03月31日 にICU入室した <span class="hl">587例</span>　|　作成 2026年10月</div></header>
 <section class="lead"><h2 class="sec">要旨</h2>
 <p class="big">入室は<b>587例</b>、ICU死亡率は<b>3.6%</b>と6年で最も低い。重症度で補正した標準化死亡比（SMR）は<b>0.65</b>で、6年続けて信頼区間の上限が1を下回り、「重症度から予測されるより死亡が少ない」水準を保っている。</p>
 <p class="big">一方で、<b>再入室率が12.3%と過去6年で最高</b>になり、<b>院内死亡率は13.7%→16.6%</b>と上昇した。ICUを生きて退室した後に亡くなる患者が増えている。</p>

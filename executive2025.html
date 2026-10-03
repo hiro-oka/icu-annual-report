@@ -196,7 +196,61 @@ footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);
   .mo-on .mo-dot{transform:none!important}
 }
 .mo-done .mo,.mo-done .mo-cv,.mo-done .mo-li,.mo-done .mo-row{opacity:1!important;transform:none!important}
-.mo-done .mo-hl{background-size:100% 100%!important}</style><script>// 年次レポートの動く図（モーショングラフィック）の共通部品
+.mo-done .mo-hl{background-size:100% 100%!important}
+/* ⑥ 冒頭の物語（スクロールで読み進める） */
+.st-wrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:30px;margin:26px 0 34px;position:relative}
+.st-head{grid-column:1/-1;margin:0 0 -6px}
+.st-head .st-eyebrow{font-size:12.5px;letter-spacing:.18em;color:#0084B5;font-weight:800}
+.st-head .st-title{font-size:30px;font-weight:800;color:#1D3348;line-height:1.35;margin:4px 0 0}
+.st-viz{position:sticky;top:64px;height:min(620px,calc(100vh - 96px));border-radius:22px;overflow:hidden;
+  background:radial-gradient(120% 90% at 20% 0%,#24496A 0%,#16283A 55%,#0E1B28 100%);box-shadow:0 18px 40px rgba(14,27,40,.28)}
+.st-viz canvas{display:block;width:100%;height:100%}
+.st-viz .st-cap{position:absolute;left:22px;top:16px;font-size:12px;letter-spacing:.12em;color:rgba(255,255,255,.62);font-weight:700}
+.st-steps{padding:8vh 0 28vh}
+.st-step{min-height:72vh;display:flex;align-items:center}
+.st-card{background:#fff;border:1px solid #E3EAF0;border-radius:18px;padding:24px 26px;box-shadow:0 8px 28px rgba(22,34,46,.08);
+  opacity:.28;transform:scale(.97);transition:opacity .45s ease,transform .45s ease,box-shadow .45s ease}
+.st-step.on .st-card{opacity:1;transform:none;box-shadow:0 14px 36px rgba(0,132,181,.16)}
+.st-k{font-size:12.5px;font-weight:800;color:#0084B5;letter-spacing:.1em;margin-bottom:4px}
+.st-num{font-size:54px;font-weight:800;color:#16222E;line-height:1.05;font-feature-settings:"tnum";letter-spacing:-.01em}
+.st-num span{font-size:20px;font-weight:700;color:#5F7080;margin-left:4px}
+.st-card p{margin:10px 0 0;font-size:15.5px;line-height:1.85;color:#2B3A47}
+.st-card .em{font-weight:800;color:#C0392B}
+.st-card .em2{font-weight:800;color:#C77C00}
+@media(max-width:900px){
+  .st-wrap{grid-template-columns:1fr;gap:0}
+  .st-viz{top:56px;height:46vh;z-index:2}
+  .st-steps{padding:4vh 0 20vh;position:relative;z-index:3}
+  .st-step{min-height:70vh;align-items:flex-end}
+  .st-card{box-shadow:0 10px 30px rgba(22,34,46,.18)}
+}
+/* PDF・動きを減らす設定・印刷：カードは普通に並べ、図は最後の場面の静止画 */
+.st-static .st-steps{padding:0}
+.st-static .st-step{min-height:0;margin:0 0 12px}
+.st-static .st-card{opacity:1;transform:none}
+.st-static .st-viz{position:relative;top:0}
+@media print{
+  .st-wrap{display:block}
+  .st-viz{position:relative;top:0;height:360px;margin-bottom:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .st-steps{padding:0}.st-step{min-height:0;margin:0 0 10px;break-inside:avoid}
+  .st-card{opacity:1!important;transform:none!important}
+}
+/* 章見出し：文字が左から拭き出され、下線が左から引かれる */
+.mo-on h1.mo-k.mo{opacity:1;transform:none}
+.mo-on h1.mo-k{position:relative;border-bottom-color:transparent!important;clip-path:inset(-10px 100% -10px 0);transition:clip-path .9s cubic-bezier(.2,.7,.2,1)}
+.mo-on h1.mo-k.mo-in{clip-path:inset(-10px -10px -10px 0)}
+.mo-on h1.mo-k::after{content:"";position:absolute;left:0;right:0;bottom:-3px;height:3px;background:#0084B5;
+  transform:scaleX(0);transform-origin:left center;transition:transform 1s .2s cubic-bezier(.2,.7,.2,1)}
+.mo-on h1.mo-k.mo-in::after{transform:scaleX(1)}
+@media print{.mo-on h1.mo-k{clip-path:none!important}.mo-on h1.mo-k::after{transform:none!important}}
+.mo-done h1.mo-k{clip-path:none!important}.mo-done h1.mo-k::after{transform:none!important}
+/* 印刷・PDF：Bootstrapの印刷用CSSが背景を透明にするため、物語のパネルは !important で地色を残す。カードは幅をそろえる */
+@media print{
+  .st-wrap .st-viz{background:#16283A!important;box-shadow:none!important}
+  .st-wrap .st-step{display:block}
+  .st-wrap .st-card{box-shadow:none!important;border:1px solid #DCE5EC!important}
+  .st-wrap .st-card .st-num{color:#16222E!important}
+}</style><script>// 年次レポートの動く図（モーショングラフィック）の共通部品
 // ・画面に入ったら自動再生し、最後まで行ったら頭に戻ってループする
 // ・「動きを減らす」設定の閲覧者と、PDF化（Headless Chrome）では最終状態の静止画を出す
 // ・図は ICUAnim.beds / ICUAnim.sankey / ICUAnim.years の3種類
@@ -527,6 +581,156 @@ window.ICUAnim = (function () {
       ends.forEach(function (e) { e.style.opacity = pr >= 1 ? 1 : 0; });
     };
   }
+  // ---- ⑥ 冒頭の物語（スクロールで読み進める。1点＝患者1人） -------------------------------
+  // d = {p:[[入口, 死亡, 再入室, 長期],…（入室順）], routes:[[名前, 人数],…], cen:[365日の正午在室数], beds, share:[人数%, 日数%]}
+  function story(id, d) {
+    var root = document.getElementById(id); if (!root) return;
+    var cv = root.querySelector("canvas"), ctx = cv.getContext("2d");
+    var steps = [].slice.call(root.querySelectorAll(".st-step"));
+    var N = d.p.length, dpr = Math.min(window.devicePixelRatio || 1, 2), W = 0, H = 0;
+    var PAL = [[127,182,222],[243,161,166],[246,194,122],[168,154,219],[134,207,176],[240,176,212],[197,200,210]];
+    var DIM = [255,255,255,.16], BASE = [143,200,230,.95], RED = [255,120,90,1], ORG = [255,190,80,1];
+    var dots = d.p.map(function () { return { x: 0, y: 0, r: 0, c: [143,200,230,0], f: null, t: null, t0: 0, dl: 0 }; });
+    var labels = [], extra = null, state = -1, raf = null;
+    function size() {
+      var b = cv.getBoundingClientRect(); W = b.width; H = b.height;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function grid(idx, x0, y0, w, h) {          // idx の点を枠 (x0,y0,w,h) に格子で並べる
+      var n = idx.length, cols = Math.max(1, Math.ceil(Math.sqrt(n * w / h))), rows = Math.ceil(n / cols);
+      var cell = Math.min(w / cols, h / rows), ox = x0 + (w - cell * cols) / 2, oy = y0 + (h - cell * rows) / 2;
+      return idx.map(function (i, k) { return { i: i, x: ox + cell * (k % cols + .5), y: oy + cell * (Math.floor(k / cols) + .5), r: cell * .34 }; });
+    }
+    function all() { var a = []; for (var i = 0; i < N; i++) a.push(i); return a; }
+    function target(s) {
+      var T = new Array(N), pad = 26, top = 54;
+      labels = []; extra = null;
+      if (s === 0) {
+        grid(all(), pad, top, W - 2 * pad, H - top - pad).forEach(function (g) { T[g.i] = { x: g.x, y: g.y, r: g.r, c: BASE }; });
+      } else if (s === 1) {                        // 入口ごとに集まる
+        var k = d.routes.length, bw = (W - 2 * pad) / k;
+        d.routes.forEach(function (rt, j) {
+          var idx = []; for (var i = 0; i < N; i++) if (d.p[i][0] === j) idx.push(i);
+          var gt = top + (bw < 80 ? 56 : 22);
+          grid(idx, pad + j * bw + 4, gt, bw - 8, H - gt - pad).forEach(function (g) {
+            T[g.i] = { x: g.x, y: g.y, r: Math.min(g.r, 5.5), c: PAL[j % PAL.length].concat(1) }; });
+          labels.push({ x: pad + (j + .5) * bw, y: top + 4 + (bw < 80 && j % 2 ? 34 : 0), t: rt[0], n: rt[1] + "人", c: PAL[j % PAL.length] });
+        });
+      } else if (s === 2 || s === 3 || s === 4) {  // 死亡・再入室・長期滞在を浮かび上がらせる
+        var col = s === 2 ? 1 : s === 3 ? 2 : 3, hc = s === 2 ? RED : ORG;
+        grid(all(), pad, top, W - 2 * pad, H - top - pad - (s === 4 ? 70 : 0)).forEach(function (g) {
+          var on = d.p[g.i][col] === 1;
+          T[g.i] = { x: g.x, y: g.y, r: on ? g.r * 1.25 : g.r * .8, c: on ? hc : DIM };
+        });
+        if (s === 4) extra = { k: "bars" };
+      } else if (s === 5) {                        // 365日のカレンダー（1行＝1か月。濃いほど在室が多い・満床は橙）
+        // 横長のパネル＝1行が1か月（12行×31日）、縦長のパネル＝1列が1か月（12列×31日）。マスが大きく取れる向きを使う
+        var days = d.cen.length, lw = 34, th = 26;
+        var cwH = Math.min((W - 2 * pad - lw) / 31, (H - top - pad - 56) / 12);
+        var cwV = Math.min((W - 2 * pad) / 12, (H - top - pad - 56 - th) / 31);
+        var vert = cwV > cwH, cw = vert ? cwV : cwH;
+        var ox = vert ? (W - cw * 12) / 2 : (W - (lw + cw * 31)) / 2 + lw;
+        var oy = vert ? top + th + (H - top - pad - 56 - th - cw * 31) / 2 : top + 10 + (H - top - pad - 56 - cw * 12) / 2;
+        var mo = d.months.map(function (m) { return m[0]; });
+        for (var i = 0; i < N; i++) {
+          if (i < days) {
+            var row = 0; while (row + 1 < mo.length && mo[row + 1] <= i) row++;
+            var dom = i - mo[row];
+            var v = d.cen[i], full = v >= d.beds, a = .12 + .88 * Math.max(0, (v - 2)) / (d.beds - 2);
+            T[i] = { x: ox + cw * ((vert ? row : dom) + .5), y: oy + cw * ((vert ? dom : row) + .5), r: cw * .42,
+                     c: full ? ORG : [143,200,230,Math.min(1, a)], sq: 1 };
+          } else T[i] = { x: W / 2, y: H / 2, r: 0, c: [143,200,230,0] };
+        }
+        extra = { k: "cal", ox: ox, oy: oy, cw: cw, vert: vert, n: vert ? 31 : 12 };
+      }
+      return T;
+    }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    var cap = root.querySelector(".st-cap");
+    function go(s) {
+      if (s === state) return; state = s;
+      if (cap) cap.textContent = s === 5 ? "1つのマス＝1日（正午の在室数）" : "1つの点＝患者1人";
+      var T = target(s), now = performance.now();
+      dots.forEach(function (o, i) {
+        o.f = { x: o.x, y: o.y, r: o.r, c: o.c.slice() }; o.t = T[i]; o.t0 = now; o.dl = (i / N) * (s === 0 ? 700 : 260);
+        if (o.r === 0 && s === 0) { o.f.x = T[i].x; o.f.y = T[i].y; }
+      });
+      extra && (extra.t0 = now);
+      if (!raf) raf = requestAnimationFrame(frame);
+    }
+    function draw(now) {
+      ctx.clearRect(0, 0, W, H);
+      var busy = false;
+      dots.forEach(function (o) {
+        if (o.t) {
+          var p = Math.max(0, Math.min(1, (now - o.t0 - o.dl) / 750)), e = easeOut(p);
+          if (p < 1) busy = true;
+          o.x = lerp(o.f.x, o.t.x, e); o.y = lerp(o.f.y, o.t.y, e); o.r = lerp(o.f.r, o.t.r, e);
+          o.c = o.f.c.map(function (v, k) { return lerp(v, o.t.c[k], e); }); o.sq = o.t.sq;
+        }
+        if (o.r <= .2 || o.c[3] <= .01) return;
+        ctx.fillStyle = "rgba(" + Math.round(o.c[0]) + "," + Math.round(o.c[1]) + "," + Math.round(o.c[2]) + "," + o.c[3].toFixed(3) + ")";
+        if (o.sq) { var h2 = o.r; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(o.x - h2, o.y - h2, h2 * 2, h2 * 2, h2 * .3) : ctx.rect(o.x - h2, o.y - h2, h2 * 2, h2 * 2); ctx.fill(); }
+        else { ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, 6.2832); ctx.fill(); }
+      });
+      ctx.textAlign = "center"; ctx.font = "700 13px " + getComputedStyle(root).fontFamily;
+      labels.forEach(function (l) {
+        ctx.fillStyle = "rgb(" + l.c.join(",") + ")"; ctx.fillText(l.t, l.x, l.y);
+        ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.font = "12px " + getComputedStyle(root).fontFamily; ctx.fillText(l.n, l.x, l.y + 16);
+        ctx.font = "700 13px " + getComputedStyle(root).fontFamily;
+      });
+      if (extra && extra.k === "bars") {          // 人数の8% と 延べ在室日数の36% を横棒で並べる
+        var p = easeOut(Math.max(0, Math.min(1, (now - extra.t0 - 500) / 900))); if (p < 1) busy = true;
+        var bx = 26, bw2 = W - 52, by = H - 66;
+        [["患者数", d.share[0]], ["延べ在室日数", d.share[1]]].forEach(function (b, k) {
+          var y = by + k * 30;
+          ctx.fillStyle = "rgba(255,255,255,.12)"; ctx.fillRect(bx + 92, y, bw2 - 92, 14);
+          ctx.fillStyle = "rgb(255,190,80)"; ctx.fillRect(bx + 92, y, (bw2 - 92) * b[1] / 100 * p, 14);
+          ctx.textAlign = "left"; ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.font = "12px " + getComputedStyle(root).fontFamily;
+          ctx.fillText(b[0], bx, y + 11);
+          ctx.font = "700 13px " + getComputedStyle(root).fontFamily; ctx.fillStyle = "rgb(255,190,80)";
+          ctx.fillText(Math.round(b[1] * p) + "%", bx + 98 + (bw2 - 92) * b[1] / 100 * p, y + 12);
+        });
+      }
+      if (extra && extra.k === "cal") {          // 月の見出しと凡例
+        var ff = getComputedStyle(root).fontFamily;
+        var fz = extra.vert ? Math.max(8, Math.min(12, extra.cw * .78)) : 12;   // 月の数字はマスの幅に収まる大きさ
+        ctx.font = fz + "px " + ff; ctx.fillStyle = "rgba(255,255,255,.72)";
+        d.months.forEach(function (m, r) {
+          if (extra.vert) { ctx.textAlign = "center"; ctx.fillText(m[1].replace("月", ""), extra.ox + extra.cw * (r + .5), extra.oy - 8); }
+          else { ctx.textAlign = "right"; ctx.fillText(m[1], extra.ox - 8, extra.oy + extra.cw * (r + .5) + 4); }
+        });
+        if (extra.vert) { ctx.textAlign = "right"; ctx.fillText("月", extra.ox - 6, extra.oy - 8); }
+        var ly = extra.oy + extra.cw * (extra.vert ? 31 : 12) + 26; ctx.textAlign = "left";
+        ctx.fillStyle = "rgb(255,190,80)"; ctx.fillRect(extra.ox, ly - 10, 12, 12);
+        ctx.font = "12px " + ff; ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText("満床（" + d.beds + "人）", extra.ox + 18, ly);
+        var lx = extra.ox + 112, two = lx + 50 + ctx.measureText("在室が多いほど濃い").width > W - 12;   // 幅が足りなければ2行目へ
+        if (two) { lx = extra.ox; ly += 22; }
+        [.25, .55, .95].forEach(function (a, k) { ctx.fillStyle = "rgba(143,200,230," + a + ")"; ctx.fillRect(lx + k * 15, ly - 10, 12, 12); });
+        ctx.fillStyle = "rgba(255,255,255,.8)"; ctx.fillText("在室が多いほど濃い", lx + 50, ly);
+      }
+      return busy;
+    }
+    function frame(now) { var busy = draw(now); raf = busy ? requestAnimationFrame(frame) : null; }
+    size();
+    window.addEventListener("resize", function () { size(); var s = state; state = -1; go(s < 0 ? 0 : s); });
+    if (STATIC) {                                  // PDF・動きを減らす設定：最後の場面（カレンダー）を止めて描く
+      root.classList.add("st-static"); go(5);
+      dots.forEach(function (o) { o.t0 = -1e9; }); extra && (extra.t0 = -1e9); draw(performance.now()); return;
+    }
+    var cur = -1;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        var k = steps.indexOf(e.target); if (k === cur) return; cur = k;
+        steps.forEach(function (st, j) { st.classList.toggle("on", j === k); });
+        var num = e.target.querySelector(".st-num"); if (num && !num.dataset.done) { num.dataset.done = 1; countUp(num); }
+        go(+e.target.dataset.s);
+      });
+    }, { rootMargin: "-45% 0px -45% 0px" });
+    steps.forEach(function (st) { io.observe(st); });
+  }
+
   // ---- ⑤ レポート全体の動き（スクロールで現れる・数字のカウントアップ・線を描く・マーカーを引く・棒が伸びる） --
   // どれも1回だけ。印刷・PDF・「動きを減らす」設定では何もしない（最初から最終状態）。
   // JSが動かないときに中身が消えないよう、隠すのは .mo-on を付けたあとだけにしている。
@@ -607,6 +811,8 @@ window.ICUAnim = (function () {
       el.classList.add("mo-in");
       if (el.matches(".plotly.html-widget")) setTimeout(function () { growBars(el); }, 120);
     });
+    // 2b) 章見出し：文字が左から拭き出され、下線が左から引かれる（文字は分割しない。目次の自動生成に影響させないため）
+    [].forEach.call(document.querySelectorAll(".toc-content h1"), function (h) { if (!h.closest(".cover")) h.classList.add("mo-k"); });
     // 3) 数値カードのカウントアップ（年度タブで表示された年度もその時点で数える）
     seen([].slice.call(document.querySelectorAll(".kpi-val,.kv")), function (el) { countUp(el); }, 0.5);
     // 4) ミニ推移線を左から描く
@@ -632,7 +838,7 @@ window.ICUAnim = (function () {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", enhance); else enhance();
 
-  return { beds: beds, sankey: sankey, years: years, lines: lines };
+  return { beds: beds, sankey: sankey, years: years, lines: lines, story: story };
 })();</script></head><body><div class="wrap">
 <header class="hero"><div class="eyebrow">聖路加国際病院 集中治療科</div><h1>ICU 年次レポート ダイジェスト<br><span class="fy">2025年度</span></h1><div class="meta">対象期間 2025年04月01日 〜 2026年03月31日 にICU入室した <span class="hl">587例</span>　|　作成 2026年10月</div></header>
 <section class="lead"><h2 class="sec">要旨</h2>
